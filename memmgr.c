@@ -1,6 +1,6 @@
 //
 //  memmgr.c
-//  memmgr project
+//  memmgr project cpsc 351
 //
 
 #include <stdio.h>
