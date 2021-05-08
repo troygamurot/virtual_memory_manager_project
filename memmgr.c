@@ -46,12 +46,22 @@ void getpage_offset(unsigned x) {
 
 int tlb_contains(unsigned x) {  // TODO:
 
+  int z;
+    for(z = 0; z < 16; z++){
+        if(tlb[z][0] == x){
+           return z;
+        }
+    }
 
   return -1;
 }
 
 void update_tlb(unsigned page) {  // TODO:
 
+  tlb[current_tlb_entry][0] = page;
+  tlb[current_tlb_entry][1] = page_table[page];
+  current_tlb_entry++;
+  current_tlb_entry %= 16;
 
 }
 
@@ -59,57 +69,105 @@ unsigned getframe(FILE* fstore, unsigned logic_add, unsigned page,
          int *page_fault_count, int *tlb_hit_count) {              // TODO
   // tlb hit
 
-  
-  
-  // tlb miss
-  // if page table hit
+  int tlbhit = tlb_contains(page);
+  if (tlbhit != -1){
+    *tlb_hit_count++;
+    return tlb[tlbhit][1];
+  }
 
+  // tlb miss, page table hit
+ 
+  if (page_table[page] != -1){
+    update_tlb(page);
+    return page_table[page];
+  }
   
   // page table miss -> page fault
-  // find page location in backing_store
+  // find location in backing_store
 
-  
-  
+  *page_fault_count ++;
+
+  int offset = (logic_add / FRAME_SIZE) * FRAME_SIZE;
+  fseek(fstore,offset,0);
+
   // bring data into memory, update tlb and page table
 
+  page_table[page] = current_frame;
+  current_frame = (current_frame +1) %256;
+  fread(&main_mem[page_table[page] * FRAME_SIZE],sizeof(char),256,fstore);
+  update_tlb(page);
+  return page_table[page];
 
 }
 
 int get_available_frame(unsigned page) {    // TODO
+
   // empty queue
 
-  
+  if(qhead == 0 && qtail == 0 && page_queue[qhead] == 1){
+      ++qtail;
+      page_queue[qhead] = page;
+      return qhead;
+    }
+
   // queue not full
 
-  
-  
+​  if(page_queue[qtail] == -1){
+      page_queue[qtail] = page;
+      int y = qtail;
+      qtail = (qtail +1) % 128;
+      return y;
+    }
+
   // queue full
 
-
+  if(qhead == qtail && page_queue[qtail] = -1){
+      page_queue[qhead] = page;
+      int y = qhead;
+      qhead = (qhead + 1) % 128;
+      qtail = (qtail + 1) % 128;
+      return y;
+    }
 
   return -1;   // failed to find a value
 }
 
 unsigned getframe_fifo(FILE* fstore, unsigned logic_add, unsigned page,
          int *page_fault_count, int *tlb_hit_count) {
+
   // tlb hit
 
-
+  int tlbhits = tlb_contains(page);
+  if(tlbhits != -1){
+    if(page_queue[tlb[tlbhits][1]] == page){
+      *tlb_hit_count++;
+      return tlb[tlbhits][1];
+    }
+  }
 
   // tlb miss, page table hit
- 
-  
-  
-  
+
+  if(page_table[page] != -1){
+    update_tlb(page);
+    return page_table[page];
+  }
+
   // page table miss -> page fault
   // find location in backing_store
 
-  
-  
-  
+  int offest = (logic_add / FRAME_SIZE) * FRAME_SIZE;
+  fseek(fstore,offset,0);
+​
+
   // bring data into memory, update tlb and page table
-
-
+ 
+  int available = get_available_frame(page);
+  fread(&main_mem_fifo[available * FRAME_SIZE], sizeof(char),25,fstore);
+  page_table[page] = available;
+  *page_faule_count++;
+  update_tlb(page);
+  return page_table[page];
+​
 }
 
 void open_files(FILE** fadd, FILE** fcorr, FILE** fstore) {
