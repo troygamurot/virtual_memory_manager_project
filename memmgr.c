@@ -1,6 +1,6 @@
 //
 //  memmgr.c
-//  memmgr
+//  memmgr project
 //
 
 #include <stdio.h>
