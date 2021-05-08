@@ -111,8 +111,7 @@ int get_available_frame(unsigned page) {    // TODO
     }
 
   // queue not full
-
-​  if(page_queue[qtail] == -1){
+  if(page_queue[qtail] == -1){
       page_queue[qtail] = page;
       int y = qtail;
       qtail = (qtail +1) % 128;
@@ -121,7 +120,7 @@ int get_available_frame(unsigned page) {    // TODO
 
   // queue full
 
-  if(qhead == qtail && page_queue[qtail] = -1){
+  if(qhead == qtail && page_queue[qtail] == -1){
       page_queue[qhead] = page;
       int y = qhead;
       qhead = (qhead + 1) % 128;
@@ -155,21 +154,17 @@ unsigned getframe_fifo(FILE* fstore, unsigned logic_add, unsigned page,
   // page table miss -> page fault
   // find location in backing_store
 
-  int offest = (logic_add / FRAME_SIZE) * FRAME_SIZE;
+  int offset = (logic_add / FRAME_SIZE) * FRAME_SIZE;
   fseek(fstore,offset,0);
-​
-
   // bring data into memory, update tlb and page table
  
   int available = get_available_frame(page);
   fread(&main_mem_fifo[available * FRAME_SIZE], sizeof(char),25,fstore);
   page_table[page] = available;
-  *page_faule_count++;
+  *page_fault_count++;
   update_tlb(page);
   return page_table[page];
-​
 }
-
 void open_files(FILE** fadd, FILE** fcorr, FILE** fstore) {
   *fadd = fopen("addresses.txt", "r");    // open file addresses.txt  (contains the logical addresses)
   if (*fadd ==  NULL) { fprintf(stderr, "Could not open file: 'addresses.txt'\n");  exit(FILE_ERROR);  }
